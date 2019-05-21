@@ -1,0 +1,81 @@
+******************************************************/
+options ls=80;
+libname worklib 'C:\Users\lhwang94\Desktop\SAS\lib';
+
+* Read the data from stock returns into 'd1';
+* and use the percentage number of the returns;
+data d1;
+set worklib.a1_data_stocks;
+ret=ret*100;
+run;
+* Read the variable names;
+proc contents data=d1;
+run;
+* Compute the univariate description by permno; 
+proc univariate data=d1;
+var RET; 
+by PERMNO; 
+where date>="03JUL1962"d and
+date<="30DEC1994"d;
+run;
+*-----------------------------------------------;
+
+* Read the data from indices returns into 'd2';
+* and use the percentage number of the returns;
+data d2;
+set worklib.a1_data_indices; 
+EWRETD=EWRETD*100;
+VWRETD=VWRETD*100;
+run;
+* Read the database contens;
+proc contents data=d2;
+run;
+* Compute the univariate description by market return category; 
+proc univariate data=d2;
+var EWRETD VWRETD; 
+run;
+*--------------------------------------------------------;
+
+*split Interlake Corp. data from original dataset;
+data d_Interlake;
+set d1;
+where PERMNO=15747;
+run;
+*split VWRETD from the indices database;
+data d_VWRETD;
+set d2;
+keep date VWRETD;
+*merge the two data set and define the labels;
+proc sort data=d_Interlake;
+by date;
+proc sort data=d_VWRETD;
+by date;
+data d_merge;
+merge d_Interlake d_VWRETD;
+by date;
+excess_ret=ret-VWRETD;
+label
+excess_ret="Interlake Corp. Excess Return"
+ret='Interlake Corp. Daily Returns, 19620703:19941230';
+run;
+*check the label of Interlake Copr.;
+proc contents data=d_merge;
+run;
+*--------------------------------------------------------;
+
+*print the first 10 observatioin;
+proc print data=d_merge(obs=10);
+run;
+*--------------------------------------------------------;
+
+*compute the univariate statistics for the excess returns;
+proc univariate data=d_merge;
+var excess_ret;
+run;
+
+
+
+
+
+
+
